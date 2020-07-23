@@ -1,71 +1,23 @@
-import requests
-from bs4 import BeautifulSoup
+from scrapper.modules.chaturbate_search import ChaturbateSearch, ChatrubateCam, Gender, Tag
 from random import randrange
 
 
-URL = 'https://it.chaturbate.com/'
-
-
-class ChatrubateUser:
-    def __init__(self, username: str):
-        self.username: str = username.replace('/', '')
-        self.url: str = URL + self.username
-        self.__age: int = 20
-        self.gender = None
-
-    @property
-    def age(self):
-        return self.__age
-
-    @age.setter
-    def age(self, value):
-        try:
-            self.__age = int(value)
-        except ValueError:
-            self.__age = None
-
-
 class Bot:
-
-    def send_text(self, text):
+    @staticmethod
+    def send_text(text):
         print(text)
 
 
-class Chatrubate(object):
+class Chaturbate:
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
 
         self.bot = Bot()
-
         self._first = None
-        self._idx = None
-        self._n = None
-        self._girls = None
-
-    def __web_scrapper(self, url):
-
-        ppl_list = []
-        page = requests.get(url)
-        soup = BeautifulSoup(page.content, 'html.parser')
-
-        for vid in soup.findAll(attrs={'class': 'room_list_room'}):
-            g = ChatrubateUser(vid.find('a')['href'])
-            g.age = vid.find('span').text
-            ppl_list.append(g)
-        return ppl_list
-
-    def find_by_age(self, age):
-        result = []
-        for page in range(3):
-            data = self.__web_scrapper(URL+'?page={}'.format(page))
-            for user in data:
-                if user.age == age:
-                    result.append(user)
-                    print(user.url)
 
     def run(self):
 
-        girls_list = self.__web_scrapper(URL)
+        girls_list = []  # self.__web_scrapper(URL)
         len_vl = len(girls_list) - 1
 
         # Send the first o the query
@@ -73,39 +25,48 @@ class Chatrubate(object):
             self.bot.send_text(girls_list[0].url)
             return
 
-        if self._girls is not None:
-            out = ''
-            girls = girls_list[:20]
-            for girl in girls:
-                out += '{}\n'.format(girl.username)
-            self.bot.send_text(out)
-            return
-
-        # send in chat a stack of videos
-        if self._n:
-            n = int(self._n)
-            for girl in girls_list:
-                self.bot.send_text(girl.url)
-                n -= 1
-                if n is 0:
-                    break
-            return
-
-        # Send a specific video in the query array
-        if self._idx:
-            idx = int(self._idx) - 1
-
-            if idx > len_vl:
-                idx = len_vl
-            if idx < 0:
-                idx = 0
-
-        else:
-            idx = randrange(0, len_vl)
-
-        self.bot.send_text(girls_list[idx].url)
-
 
 if __name__ == '__main__':
-    c = Chatrubate()
-    c.find_by_age(45)
+    """
+    you can search with and without a tag
+    
+    inside the search method you can specify
+    - In search() you can specify a gender
+        - gender=Gender.MALE (MALE, FEMALE, TRANS, COUPLE) DEFAULT: Gender.NONE (query all)
+    - In search() you can specify a gender
+        - tag=Tag.ASIAN (a lot of tags) to build custom tag use my_tag=Tag(TAG) and then pass my_tag to the method
+        - gender=Gender.MALE (MALE, FEMALE, TRANS, COUPLE) DEFAULT: Gender.NONE (query all)
+    
+    in both the search you can add this aditional parameters
+        query="yumi" a keyword to find in username on the site DEFAULT: ""
+        nr_pages: the number of pages where search in (more pages == more time) DEFAULT: 1
+        
+    in filters you have to use a lambda in numeric fields
+    lambda x: if x == 18
+    """
+    # cams = ChaturbateSearch().search().filter_by(age=18, filter_gender=Gender.COUPLE)
+
+    cams = ChaturbateSearch().search_tag(
+        tag=Tag.ASIAN,
+        gender=Gender.FEMALE
+    )
+
+    cams = cams.filter_by(
+        age=lambda age: True if 18 <= age <= 19 else False,
+    )
+
+    if cams.results:
+        for cam in cams.results:
+            cam: ChatrubateCam
+            print(
+                cam.gender.name.title(),
+                cam.age,
+                cam.url,
+                'location:"{}" uptime: {} spectators: {}'.format(cam.location, cam.uptime_min, cam.spectators)
+            )
+    else:
+        print('Nothing Found')
+
+
+
+
