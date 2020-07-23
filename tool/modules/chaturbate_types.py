@@ -77,7 +77,7 @@ class ChatrubateCam:
         - take the number --> [1]
         - revert the number --> [::-1]
         """
-        self.spectators = s[0].split(' ', 1)[1][::-1]
+        self.spectators = int(s[0].split(' ', 1)[1][::-1])
         """
         s[1]
             - snim 24

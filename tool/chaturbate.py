@@ -40,7 +40,7 @@ if __name__ == '__main__':
         you can filter as many times you want 
         keeping results always untouched
     """
-    MyTag = Enum('MyTag', {'CUSTOM': 'japanese/'})
+    MyTag = Enum('MyTag', {'CUSTOM': 'asian/'})
 
     # cams = ChaturbateSearch().search().filter_by(age=18, filter_gender=Gender.COUPLE)
 
@@ -51,6 +51,8 @@ if __name__ == '__main__':
 
     cams = cams.filter_by(
         age=lambda age: True if 18 <= age <= 22 else False,
+        uptime_min=lambda uptime_min: True if 30 <= uptime_min <= 200 else False,
+        spectators=lambda spectators: True if 1 <= spectators <= 20 else False,
     )
 
     if cams.filtered_results:

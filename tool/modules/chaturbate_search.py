@@ -77,12 +77,12 @@ class ChaturbateSearch:
         self.__search(gender.value[1], *argv)
         return self
 
-    def filter_by(self, age=None, gender=Gender.NONE, uptime=None, spectators=None):
+    def filter_by(self, age=None, gender=Gender.NONE, uptime_min=None, spectators=None):
         """
         Filter cams by parameters
         :param age: filter by the age of the ppl to search
         :param gender: filter by gender
-        :param uptime: filter by uptime
+        :param uptime_min: filter by uptime
         :param spectators: filter by number of spectators
         """
         for user_cam in self.__cams_list:
@@ -92,9 +92,9 @@ class ChaturbateSearch:
             # fields must match the regex if is specified else take all
             if age and not age(user_cam.age):
                 continue
-            if uptime and not age(user_cam.age):
+            if uptime_min and not uptime_min(user_cam.uptime_min):
                 continue
-            if spectators and not age(user_cam.age):
+            if spectators and not spectators(user_cam.spectators):
                 continue
             self.__filtered_list.append(user_cam)
 
