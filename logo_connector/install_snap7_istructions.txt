@@ -1,0 +1,9 @@
+Download snap7-iot-quark-1.4.2.tar.gz and copy it to your IOT2000 (e.g to /media)
+go to /media
+tar xzf snap7-iot-quark-1.4.2.tar.gz
+cd snap7-iot-quark-1.4.2/build/unix
+make -f i586_linux.mk
+cd ../bin/i586-linux
+cp libsnap7.so /usr/lib
+ldconfig
+pip3 install python-snap7
