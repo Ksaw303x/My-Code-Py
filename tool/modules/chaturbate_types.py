@@ -3,6 +3,10 @@ from enum import Enum
 
 class Tag(Enum):
     ASIAN = 'asian'
+    PETITE = 'petite'
+    TEEN = 'teen'
+    CUTE = 'cute'
+    SHY = 'shy'
 
     @staticmethod
     def tag_url(tag):

@@ -10,7 +10,7 @@ class ChaturbateSearch:
 
     def __init__(self):
         self.__cams_list = []
-        self.__result_list = []
+        self.__filtered_list = []
 
     def __web_scrapper(self, url):
         """
@@ -55,7 +55,8 @@ class ChaturbateSearch:
             )
                                          )
             if not status and page is 0:
-                raise NoResults(url=url_specification, query=query)
+                pass
+                # raise NoResults(url=url_specification, query=query)
 
     def search_tag(self, tag: Tag, gender=Gender.NONE, *argv):
         """
@@ -95,10 +96,14 @@ class ChaturbateSearch:
                 continue
             if spectators and not age(user_cam.age):
                 continue
-            self.__result_list.append(user_cam)
+            self.__filtered_list.append(user_cam)
 
         return self
 
     @property
     def results(self):
-        return self.__result_list
+        return self.__cams_list
+
+    @property
+    def filtered_results(self):
+        return self.__filtered_list
