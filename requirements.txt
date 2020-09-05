@@ -6,3 +6,5 @@ livestreamer
 opencv-python
 selenium
 pyautogui
+
+TikTokApi
