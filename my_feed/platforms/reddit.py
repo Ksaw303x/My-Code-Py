@@ -1,11 +1,11 @@
 import json
 import requests
 from enum import Enum
-from pprint import pprint
 
-from my_feed.modules.models import PostModel
+from my_feed.modules.post import PostModel
 from my_feed.modules.types import PostType
 
+# header for the requests to the reddit api
 HEADER = {'User-agent': 'bot'}
 
 
@@ -19,18 +19,31 @@ class Reddit:
         NONE = None
 
     def __init__(self):
-        self.r_list = []  # list of all the sub-reddit where to get the data
+        self.__last_post_id = None  # reddit 'Fullname' ID of the last post get
+
+    @property
+    def last_post_id(self):
+        """
+        The the last post Id
+        This property must be get after the update
+        :return: a slug ID
+        """
+        return self.__last_post_id
 
     @staticmethod
-    def __request_data(r, after=None):
+    def __request_data(r, before=None):
         """
         Call the reddit api for the data
         :param r: the sub-reddit
-        :param after: the last post id received (eg: t1-sxsdfew")
+        :param before: the last post id received (eg: t1-sxsdfew")
         :return: the data as dictionary
         :raise ConnectionError: if the api don't respond with a 200
         """
+
         url = 'https://www.reddit.com/r/%s/new.json?limit=20' % r
+        if before:
+            url = 'https://www.reddit.com/r/%s/new.json?before=%s' % (r, before)
+
         res = requests.get(url, headers=HEADER)
         if res.status_code == 200:
             json_data = res.content
@@ -46,12 +59,11 @@ class Reddit:
         for el in posts:
 
             data = el.get('data')
-            # pprint(data)
 
             # create the std post object
             # with the base data
             post = PostModel(
-                post_id=data.get('id'),
+                post_id=data.get('name'),
                 title=data.get('title'),
                 created_at=data.get('created_utc'),
                 url='https://www.reddit.com%s' % data.get('permalink')
@@ -101,14 +113,21 @@ class Reddit:
 
         return out
 
-    def update(self):
-        if not self.r_list:
-            return
+    def update(self, r, last_update_id):
+        """
+        :param r: the sub-reddit channel
+        :param last_update_id: the id of the last known post
+        :return: a list of feed data
+        """
+        data = self.__request_data(r, last_update_id)
+        feed = self.__build_feed(data)
+        # update the last_post_id with the first post in the chunk
+        if feed:
+            # the feed is al list of post
+            # Get the first (the newest) and make it the last post id
+            self.__last_post_id = feed[0].id
+        else:
+            # if there are no new posts keep the current one
+            self.__last_post_id = last_update_id
 
-        all_feed_data = []
-        for el in self.r_list:
-            data = self.__request_data(el)
-            feed = self.__build_feed(data)
-            all_feed_data += feed
-
-        return all_feed_data
+        return feed
