@@ -3,16 +3,16 @@ from .types import PostType
 
 class MediaModel:
 
-    def __init__(self, media_id, media_type, url):
+    def __init__(self, media_id, url, media_type):
         self.id = media_id
-        self.type = media_type
         self.url = url
+        self.type = media_type
 
 
 class PostModel:
 
     def __init__(self, post_id, title, created_at, url):
-        self.post_id: str = post_id
+        self.id: str = post_id
         self.title: str = title
         self.type: PostType = PostType.NONE
         self.created_at: str = created_at
@@ -20,8 +20,8 @@ class PostModel:
         self.media: list = []
         self.description: str = ''
 
-    def add_media(self, media_id, media_type, media_url):
+    def add_media(self, media_id, media_url, media_type=None):
         """
         Append a new media to the Post
         """
-        self.media.append(MediaModel(media_id, media_type, media_url))
+        self.media.append(MediaModel(media_id, media_url, media_type))

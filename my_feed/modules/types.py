@@ -5,6 +5,7 @@ class PostType(Enum):
     """
     Types of post
     """
+    EMBED = 'Embed'
     IMAGE = 'Image'
     TEXT = 'Text'
     NONE = None

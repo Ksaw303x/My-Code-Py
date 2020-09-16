@@ -1,5 +1,6 @@
 import json
 import requests
+from enum import Enum
 from pprint import pprint
 
 from my_feed.modules.models import PostModel
@@ -10,12 +11,26 @@ HEADER = {'User-agent': 'bot'}
 
 class Reddit:
 
+    class __RedditPostTypes(Enum):
+        REDDIT_VIDEO = 'reddit:video'
+        VIDEO = 'rich:video'
+        IMAGE = 'image'
+        LINK = 'link'
+        NONE = None
+
     def __init__(self):
         self.r_list = []  # list of all the sub-reddit where to get the data
 
     @staticmethod
     def __request_data(r, after=None):
-        url = 'https://www.reddit.com/r/%s/new.json?limit=1' % r
+        """
+        Call the reddit api for the data
+        :param r: the sub-reddit
+        :param after: the last post id received (eg: t1-sxsdfew")
+        :return: the data as dictionary
+        :raise ConnectionError: if the api don't respond with a 200
+        """
+        url = 'https://www.reddit.com/r/%s/new.json?limit=20' % r
         res = requests.get(url, headers=HEADER)
         if res.status_code == 200:
             json_data = res.content
@@ -23,60 +38,18 @@ class Reddit:
         else:
             raise ConnectionError
 
-    @staticmethod
-    def __get_video(data, post: PostModel):
-
-        # the video is a youtube video or form others platforms
-        if data.get('media'):
-            post.add_media(
-                media_id=None,
-                media_type='embed',
-                media_url=data.get('url')
-            )
-
-    @staticmethod
-    def __get_images(data, post: PostModel):
-        """
-        extract all the media
-        cause of the old api of reddit, check first in the media_metadata and then in the preview
-        """
-
-        media_metadata = data.get('media_metadata')
-        if media_metadata:
-
-            for media_id in media_metadata.keys():
-                media_obj = media_metadata.get(media_id)
-                post.add_media(
-                    media_id=media_id,
-                    media_type=media_obj.get('e'),
-                    media_url=media_obj.get('s').get('u').replace('amp;', '')
-                )
-
-        else:
-            preview = data.get('preview')
-            if preview:
-
-                images = preview.get('images')
-                if images:
-
-                    for media_obj in images:
-                        post.add_media(
-                            media_id=media_obj.get('id'),
-                            media_type='Image',
-                            media_url=media_obj.get('source').get('url').replace('amp;', '')
-                        )
-
     def __build_feed(self, feed_data):
 
+        out = []
         posts = feed_data.get('children')
 
-        feed_data = []
         for el in posts:
 
             data = el.get('data')
-            pprint(data)
+            # pprint(data)
 
             # create the std post object
+            # with the base data
             post = PostModel(
                 post_id=data.get('id'),
                 title=data.get('title'),
@@ -84,20 +57,49 @@ class Reddit:
                 url='https://www.reddit.com%s' % data.get('permalink')
             )
 
-            # check if is_video, is_meta
-            self.__get_images(data, post)
+            # reddit way to define what type of post is it
+            post_hint = data.get('post_hint')
+            try:
+                post_type_hint = self.__RedditPostTypes(post_hint)
+            except Exception as exc:
+                print(post_hint, exc)
+                post_type_hint = self.__RedditPostTypes.NONE
+
+            # the post has video extract the video
+            # the video on reddit can be only one per post
+            if data.get('media'):
+                post.type = PostType.EMBED
+                post.add_media(
+                    media_id=data.get('id'),
+                    media_url=data.get('url')
+                )
+
+            # if the post don't have a video in it, check for images
+            # the images on reddit can be more than one per post (loop?)
+            elif data.get('preview'):
+                # the post contains just a link, and reddit is not able to load it as embed
+                if post_type_hint == self.__RedditPostTypes.LINK:
+                    post.type = PostType.EMBED
+                else:
+                    post.type = PostType.IMAGE
+                post.add_media(
+                    media_id=data.get('id'),
+                    media_url=data.get('url')
+                )
+
+            # if the post don't contains neither video or image it should tbe a text post
+            else:
+                post.type = PostType.TEXT
 
             # check if there are a description in the post
+            # the caption text aside the title
             description = data.get('selftext')
             if description:
                 post.description = description
 
-            # decide what type of post is it
-            post.type = PostType.IMAGE if post.media else (PostType.TEXT if post.description else PostType.NONE)
+            out.append(post)  # add the post to the out
 
-            feed_data.append(post)  # add the post to the feed_data
-
-        return feed_data
+        return out
 
     def update(self):
         if not self.r_list:
