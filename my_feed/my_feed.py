@@ -57,7 +57,5 @@ class Updater:
                 # update the last id
                 channel.last_update_id = reddit.last_post_id
                 # channel.last_update = now
-            else:
-                print('not_time_jet for', channel.target)
 
         return out
