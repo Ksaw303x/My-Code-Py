@@ -3,89 +3,27 @@ import textwrap
 from io import BytesIO
 from random import randrange
 from PIL import Image, ImageDraw, ImageFont
-
-BLACK = '#616161'  # gray 700 series
-WHITE = '#FFFFFF'  # gray 200 series
-GREY = '#9E9E9E'
-LIGHT_GREY = '#BDBDBD'
-
-
-"""
-# all 500 class colors from material.io
-RED = '#F44336'
-PINK = '#E91E63'
-PURPLE = '#9C27B0'
-DEEP_PURPLE = '#673AB7'
-INDIGO = '#3F51B5'
-BLUE = '#2196F3'
-LIGHT_BLUE = '#03A9F4'
-CYAN = '#00BCD4'
-TEAL = '#009688'
-GREEN = '#4CAF50'
-LIGHT_GREEN = '#8BC34A'
-LIME = '#CDDC39'
-YELLOW = '#FFEB3B'
-AMBER = '#FFC107'
-ORANGE = '#FF9800'
-DEEP_ORANGE = '#FF5722'
-
-# all 400 class colors from material.io
-RED = '#EF5350'
-PINK = '#EC407A'
-PURPLE = '#AB47BC'
-DEEP_PURPLE = '#7E57C2'
-INDIGO = '#5C6BC0'
-BLUE = '#42A5F5'
-LIGHT_BLUE = '#29B6F6'
-CYAN = '#26C6DA'
-TEAL = '#26A69A'
-GREEN = '#66BB6A'
-LIGHT_GREEN = '#9CCC65'
-LIME = '#D4E157'
-YELLOW = '#FFEE58'
-AMBER = '#FFCA28'
-ORANGE = '#FFA726'
-DEEP_ORANGE = '#FF7043'
-"""
-
-# all 300 class colors from material.io
-RED = '#E57373'
-PINK = '#F06292'
-PURPLE = '#BA68C8'
-DEEP_PURPLE = '#9575CD'
-INDIGO = '#7986CB'
-BLUE = '#64B5F6'
-LIGHT_BLUE = '#4FC3F7'
-CYAN = '#4DD0E1'
-TEAL = '#4DB6AC'
-GREEN = '#81C784'
-LIGHT_GREEN = '#AED581'
-LIME = '#DCE775'
-YELLOW = '#FFF176'
-AMBER = '#FFD54F'
-ORANGE = '#FFB74D'
-DEEP_ORANGE = '#FF8A65'
-
+from .colors import *
 
 # color combinations for the canvas (background, text)
 # a function will select randomly a color set
 COLORS_COMBINATIONS = [
-    (RED, WHITE),
-    (PINK, WHITE),
-    (PURPLE, WHITE),
-    (DEEP_PURPLE, WHITE),
-    (INDIGO, WHITE),
-    (BLUE, WHITE),
-    (LIGHT_BLUE, WHITE),
-    (CYAN, WHITE),
-    (TEAL, WHITE),
-    (GREEN, WHITE),
-    (LIGHT_GREEN, WHITE),  # BLACK
+    (RED_100, BLACK),
+    (PINK_100, BLACK),
+    (PURPLE_100, BLACK),
+    (DEEP_PURPLE_100, BLACK),
+    (INDIGO_100, BLACK),
+    (BLUE_100, BLACK),
+    # (LIGHT_BLUE_100, BLACK),
+    # (CYAN_100, BLACK),
+    # (TEAL, BLACK),
+    # (GREEN, BLACK),
+    # (LIGHT_GREEN, BLACK),
     # (LIME, BLACK),
     # (YELLOW, BLACK),
     # (AMBER, BLACK),
-    (ORANGE, WHITE),
-    (DEEP_ORANGE, WHITE),
+    # (ORANGE, BLACK),
+    # (DEEP_ORANGE, BLACK),
 ]
 
 
@@ -98,6 +36,9 @@ class Paginator:
 
         self.width = 1080
         self.height = 1080
+
+        self.x_origin = self.width // 7  # align text on left virtual border
+        self.y_origin = self.height // 7  # align text on left virtual border
 
         # select a random color combination
         idx = randrange(0, len(COLORS_COMBINATIONS))
@@ -116,6 +57,33 @@ class Paginator:
 
         # draw a rectangle as outside border of the text
         self.rectangle_offset = 15
+
+    @staticmethod
+    def _open_image(img_dir):
+        """
+        Open an image and convert it to RGBA
+        :param img_dir: relative directory
+        :return: the img obj
+        """
+        full_img_dir = f'{os.path.dirname(os.path.realpath(__file__))}/{img_dir}'
+        img = Image.open(full_img_dir).convert('RGBA')
+        return img
+
+    def _resize_image(self, image, size=(0.9, 0.8)):
+        """
+        Resize a given image, by size factor respect the canvas dimension
+        keeping intact the form factor.
+        The transformation is done in place so keep a copy of the img object if needed the original one
+        :param image: the img obj
+        :param size: a tuple or array with the scale factor default (0.9, 0.8)
+        :return: resized object
+        """
+        size = (int(self.width * size[0]), int(self.height * size[1]))
+        image.thumbnail(
+            size,
+            Image.ANTIALIAS
+        )
+        return image
 
     def _draw_logo(self):
         logo_dir = f'{os.path.dirname(os.path.realpath(__file__))}/{self.logo_path}'
@@ -137,16 +105,20 @@ class Paginator:
             width=6
         )
 
-    def _draw_name_tag(self):
+    def _draw_name_tag(self, position=None):
         """draw name tag"""
         font_name_tag = ImageFont.truetype(self.font_dir, int(45))
 
         name_tag_width, name_tag_height = font_name_tag.getsize(self.name_tag)
         # x = self.width - line_width - self.rectangle_offset - 25
-        x = (self.width - name_tag_width) // 2
+        # x = (self.width - name_tag_width) // 2
+
         y = self.height - 108/2 - name_tag_height/2
+        if position:
+            y = position
+
         self.draw.text(
-            (x, y),
+            (self.x_origin, y),
             self.name_tag,
             font=font_name_tag,
             fill=self.text_color
@@ -161,6 +133,9 @@ class Paginator:
         :param text: the text that have to be put in the image
         """
         self._draw_logo()
+
+        quotation_marks = self._open_image('img/quotation-marks.png')
+        self._resize_image(quotation_marks, (0.2, 0.2))
 
         # if there is no text return just the template
         if text:
@@ -187,18 +162,43 @@ class Paginator:
             line_width, line_height = font.getsize(lines[0])
             y_text = self.height / 2 - line_height / 2 * len(lines)
 
+            # merge Quotation Marks with background keeping the transparency layer
+            # in position just over the text
+            qm_width, qm_height = quotation_marks.size
+            offset = (self.x_origin, int(y_text - qm_height))
+            self.image.paste(quotation_marks, offset, mask=quotation_marks)
+
+            # | |*|*|*|*|*| |
             # draw the text
+            # save the longest line
+            longest_line = line_width
+
             for line in lines:
+
                 line_width, line_height = font.getsize(line)
+                if line_width > longest_line:
+                    longest_line = line_width
+
                 self.draw.text(
-                    (30, y_text),
+                    (self.x_origin, y_text),
                     line,
                     font=font,
                     fill=self.text_color
                 )
                 y_text += line_height
 
-        self._draw_name_tag()
+            y_text += line_height
+            # draw a line under the text, before tag name
+            self.draw.line(
+                [(self.x_origin, y_text), (longest_line, y_text)],
+                width=int(self.height/100),
+                fill=self.text_color
+            )
+
+            self._draw_name_tag(y_text+line_height)
+
+        else:
+            self._draw_name_tag()
 
     def paginate_image(self, image: bytearray):
         """
@@ -231,8 +231,14 @@ class Paginator:
         img_bytes = BytesIO()
         img_bytes.name = 'post.jpeg'
         converted = self.image.convert('RGB')  # prepare to JPEG save
-        converted.save(img_bytes, format='JPEG', subsampling=0, quality=100)  # save ad jpeg - quality 95% ~85kb file
+
+        # sub-sampling at 0 keep the image sharp
+        # quality 100 avoid jpeg compression
+        converted.save(img_bytes, format='JPEG', subsampling=0, quality=100)
         img_bytes.seek(0)
+
+        converted.save('test.jpeg', format='PNG')
+        converted.show()
 
         return img_bytes
 
