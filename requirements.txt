@@ -8,3 +8,4 @@ selenium
 pyautogui
 
 TikTokApi
+python-twitter
