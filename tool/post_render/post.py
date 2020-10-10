@@ -5,7 +5,7 @@ from time import time
 def run(arg):
     t1 = time()
     name_tag = '@name_tag'
-    paginator = Paginator('img/Spotted-Logo-15-z.png', name_tag)
+    paginator = Paginator('img/uniud-icon.png', name_tag)
 
     paginator.paginate_text(arg)
     print(time() - t1)

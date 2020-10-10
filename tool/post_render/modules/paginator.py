@@ -86,11 +86,11 @@ class Paginator:
         return image
 
     def _draw_logo(self):
-        logo_dir = f'{os.path.dirname(os.path.realpath(__file__))}/{self.logo_path}'
-        logo = Image.open(logo_dir).convert('RGBA')
+        logo = self._open_image(self.logo_path)
+        self._resize_image(logo, (0.5, 0.5))
 
         logo_width, logo_height = logo.size
-        offset = ((self.width - logo_width) // 2, (self.height - logo_height) // 2)
+        offset = ((self.width - logo_width), (self.height - logo_height))
 
         # merge Logo with background keeping the transparency layer
         self.image.paste(logo, offset, mask=logo)
