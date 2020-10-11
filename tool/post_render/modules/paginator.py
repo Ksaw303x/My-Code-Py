@@ -111,25 +111,35 @@ class Paginator:
         return font
 
     @staticmethod
-    def _open_image(img_dir, color=None):
+    def _open_image(img_dir, color=None, opacity=None):
         """
         Open an image and convert it to RGBA
         :param img_dir: relative directory
+        :param color: the value of color
+        :param opacity: the opacity in percentage
         :return: the img obj
         """
         full_img_dir = f'{os.path.dirname(os.path.realpath(__file__))}/{img_dir}'
         img = Image.open(full_img_dir).convert('RGBA')
 
-        if color:
-            h = color.lstrip('#')
-            future_color = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
-
+        if opacity or color:
             data = array(img)  # "data" is a height x width x 4 numpy array
             red, green, blue, alpha = data.T  # Temporarily unpack the bands for readability
 
-            # Replace white with red... (leaves alpha values alone...)
-            white_areas = (red == 255) & (blue == 255) & (green == 255)
-            data[..., :-1][white_areas.T] = future_color  # set the new color
+            if opacity:
+                future_alpha = 255 // 100 * opacity
+
+                # Replace white with the color (leaves alpha values alone)
+                not_transparent_areas = (alpha != 0)
+                data[..., 3:][not_transparent_areas.T] = future_alpha  # set the new color
+
+            if color:
+                h = color.lstrip('#')
+                future_color = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+                # Replace white with the color (leaves alpha values alone)
+                white_areas = (red == 255) & (blue == 255) & (green == 255)
+                data[..., :-1][white_areas.T] = future_color  # set the new color
 
             img = Image.fromarray(data)
 
@@ -153,20 +163,20 @@ class Paginator:
 
     def _draw_logo(self, color=None, logo_position='right-down'):
 
-        logo = self._open_image(self.logo_path, color=color)
-
         # check if is center
         # center position need different resize
         if logo_position == 'center':
-            self._resize_image(logo, (1, 1))
+            logo = self._open_image(self.logo_path, color=color, opacity=15)
+            self._resize_image(logo, (0.9, 0.9))
             logo_width, logo_height = logo.size
             offset = [
-                ((self.width  - logo_width)//2),
+                ((self.width - logo_width)//2),
                 ((self.height - logo_height)//2)
             ]
 
         else:
-            self._resize_image(logo, (0.12, 0.12))
+            logo = self._open_image(self.logo_path, color=color)
+            self._resize_image(logo, (0.12, 0.12), )
             logo_width, logo_height = logo.size
 
             # compute position for the small logo
@@ -197,9 +207,11 @@ class Paginator:
             width=6
         )
 
-    def _draw_name_tag(self, position=None):
+    def _draw_name_tag(self, align='right', y_position=None):
         """
-            draw name tag
+        :param align:
+        :param y_position:
+        :return:
         """
 
         # no name tag is defined, abort
@@ -215,15 +227,28 @@ class Paginator:
         )
 
         name_tag_width, name_tag_height = font_name_tag.getsize(self.name_tag)
-        # x = self.width - line_width - self.rectangle_offset - 25
-        # x = (self.width - name_tag_width) // 2
 
-        y = self.height - 108/2 - name_tag_height/2
-        if position:
-            y = position
+        # compute y position
+        # if not cursor is provided put the text at the bottom
+        if y_position:
+            y = y_position
+        else:
+            y = (self.height - self.height // 10 - name_tag_height) // 2
+
+        # compute x position
+        # default right
+        choices = {
+            'center': (self.width - name_tag_width)//2,
+            'left': self.x_origin,
+            'right': self.width - self.x_origin - name_tag_width,
+        }
+        try:
+            x = choices[align]
+        except ValueError:
+            x = choices['right']
 
         self.draw.text(
-            (self.x_origin, y),
+            (x, y),
             self.name_tag,
             font=font_name_tag,
             fill=self.text_color
@@ -366,10 +391,10 @@ class Paginator:
                     fill=self.primary_color
                 )
 
-            self._draw_name_tag(y_text+line_height)
+            self._draw_name_tag(align=text_align, y_position=y_text+line_height)
 
         else:
-            self._draw_name_tag()
+            self._draw_name_tag(align=text_align)
 
     def paginate_image(self, image: bytearray):
         """
