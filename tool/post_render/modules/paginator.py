@@ -20,8 +20,8 @@ COLORS_COMBINATIONS = [
     # (LIGHT_BLUE_100, BLACK),
     # (CYAN_100, BLACK),
     # (TEAL_100, BLACK),
-    # (GREEN_200, GREEN_800, BLACK),
-    (LIGHT_GREEN_200, LIGHT_GREEN_800, BLACK),
+    (GREEN_200, GREEN_800, BLACK),
+    # (LIGHT_GREEN_200, LIGHT_GREEN_800, BLACK),
     # (LIME_100, BLACK),
     # (YELLOW_100, LIME_100, BLACK),
     # (AMBER_100, BLACK),
@@ -30,12 +30,12 @@ COLORS_COMBINATIONS = [
 ]
 
 # define default font types
+# FONT_TEXT = 'fonts/KeplerStd-Bold-Italic.otf',
 FONT_TEXT = 'fonts/Roboto-Black.ttf'
 FONT_NAME_TAG = 'fonts/KeplerStd-Bold-Italic.otf'
 
 
 default_configs = {
-    # 'font_text': 'fonts/KeplerStd-Bold-Italic.otf',
     'font_text': FONT_TEXT,
     'font_name_tag': FONT_NAME_TAG,
     'line': 'under',  # under, side, None
@@ -52,11 +52,11 @@ class Resolutions(Enum):
 
 class Paginator:
 
-    def __init__(self, logo_path, name_tag, resolution: tuple):
+    def __init__(self, logo_path, resolution: tuple, name_tag=None):
         """
         :param logo_path: the logo relative directory
-        :param name_tag: the name tag, to show in the post, if None no name_tag will be shown
         :param resolution: the resolution at tuple (width, height
+        :param name_tag: the name tag, to show in the post, if None no name_tag will be shown
         """
 
         # global configs for the Paginator
@@ -179,28 +179,29 @@ class Paginator:
             fill=self.text_color
         )
 
-    def paginate_text(self, text):
+    def paginate_text(self, text, text_align='left', line_position='center'):
         """
         Paginator is designed with a 1080 pixel resolution
         it will not scale up and down based on that if the height and height will be changed.
         Not tested with non square resolutions.
 
         :param text: the text that have to be put in the image
+        :param text_align: align center, left, right
+        :param line_position: draw the line bottom, left, right, if None no line
         """
         self._draw_logo()
 
         # if there is no text return just the template
         if text:
+
             # Calculate the font base dimension based on the resolution
             font_text_max_dim = self.width * self.height // 6000
             font_text_mim_dim = self.width * self.height // 45000
-            print(font_text_mim_dim)
 
+            # FONT DIM CALCULATIONS --------------------------------------------------------------
             # resize the font dimension based on the length of the text
             # y = (x * text_len + 1) reduce the text based on the text len (front_dim / y)
             # g(x)=(190)/(0.025*x+1.4)+25
-            # 50 is the base text dimension
-
             font_dim = (font_text_max_dim / (0.025 * len(text) + 1.4) + font_text_mim_dim)
             font_text = self._load_font(
                 self.configs.get('font_text', default_configs.get('font_text')),
@@ -216,18 +217,29 @@ class Paginator:
             # debug
             print('text len: {} - font dim: {} - width_dim: {}'.format(len(text), font_dim, width_dim))
 
+            # QUOTATION MARKS --------------------------------------------------------------
             # calculate the center of the text
             line_width, line_height = font_text.getsize(lines[0])
             y_text = self.height / 2 - line_height / 2 * len(lines)
 
             # merge Quotation Marks with background keeping the transparency layer
-            # in position just over the text
+            # Position: just over the text
             quotation_marks = self._open_image('img/quotation-marks.png')
             self._resize_image(quotation_marks, (0.08, 0.08))
             qm_width, qm_height = quotation_marks.size
             offset = (self.x_origin, int(y_text - qm_height*1.5))
+
+            # draw circle before paste quotation marks
+            """
+            bd = qm_width/4
+            self.draw.ellipse(
+                [(offset[0] - bd, offset[1] - bd), (offset[0] + qm_width + bd, offset[1] + qm_width + bd)],
+                fill=self.primary_color,
+            )
+            """
             self.image.paste(quotation_marks, offset, mask=quotation_marks)
 
+            # TEXT --------------------------------------------------------------
             # | |*|*|*|*|*| |
             # draw the text, center the text in 5/7 of the space, 1/7 border on each side
             longest_line = line_width  # save the longest line, for underline
@@ -237,26 +249,49 @@ class Paginator:
 
                 line_width, line_height = font_text.getsize(line)
                 if line_width > longest_line:
-                    longest_line = line_width
+                    longest_line = (longest_line + line_width)/2  # get the average
+
+                # calculate text position
+                if text_align == 'center':
+                    xy = ((self.width - line_width) / 2, y_text)
+                elif text_align == 'right':
+                    xy = (self.width - self.x_origin - line_width, y_text)
+                else:
+                    xy = (self.x_origin, y_text)
 
                 self.draw.text(
-                    (self.x_origin, y_text),
+                    xy,
                     line,
                     font=font_text,
                     fill=self.text_color
                 )
                 y_text += line_height
 
+            # LINE --------------------------------------------------------------
             # draw line under or aside of the text
-            line_position = True
-            if line_position:
-                y_text += line_height
-                coords = [(self.x_origin, y_text), (longest_line, y_text)]
+            longest_line = longest_line/(5/4)  # get a shorter line to not go over the logo
+
+            if line_position == 'right':
+                xy = [
+                    (self.width - self.x_origin / (3 / 2), y_text_start),
+                    (self.width - self.x_origin / (3 / 2), y_text)
+                ]
+            elif line_position == 'left':
+                xy = [(self.x_origin / (3 / 2), y_text_start), (self.x_origin / (3 / 2), y_text)]
             else:
-                coords = [(self.x_origin/(3/2), y_text_start), (self.x_origin/(3/2), y_text)]
+                y_text += line_height
+                # if the line_position is bottom and the text_align is center
+                # then center also the line
+                if text_align == 'center':
+                    origin = (self.width//2 - longest_line//2)
+                    xy = [(origin, y_text), (origin + longest_line, y_text)]
+                    print(xy)
+                else:
+                    xy = [(self.x_origin, y_text), (self.x_origin + longest_line, y_text)]
+
             # draw a line under the text, before tag name
             self.draw.line(
-                coords,
+                xy,
                 width=int(self.height/100),
                 fill=self.primary_color
             )
