@@ -5,11 +5,19 @@ from time import time
 def run(arg):
     name_tag = '@name_tag'
 
-    resolutions = [Resolutions.INSTAGRAM.value,]  # Resolutions.TWITTER.value]
+    resolutions = [Resolutions.TWITTER.value, Resolutions.INSTAGRAM.value]
+
     for res in resolutions:
         t1 = time()
         paginator = Paginator('img/uniud/icon.png', res, name_tag)
-        paginator.paginate_text(arg)
+        paginator.paginate_text(
+            arg,
+            top_image='quotation-marks',
+            text_align='center',
+            line_position='center',
+            colorize_logo=False,
+            logo_position='center'
+        )
         print(time() - t1)
 
         img = paginator.get_image()

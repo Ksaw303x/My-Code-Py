@@ -13,35 +13,50 @@ QUOTATION_MARKS_DIR = 'img/assets/quotation-marks.png'
 # color combinations for the canvas (background, text)
 # a function will select randomly a color set
 COLORS_COMBINATIONS = (
-    # (RED_100, RED_500, BLACK),
-    # (RED_900, RED_200, WHITE),
-    # (PINK_100, PINK_500, BLACK),
-    # (PURPLE_100, PINK_500, BLACK),
-    # (DEEP_PURPLE_100, DEEP_PURPLE_500, BLACK),
-    # (INDIGO_100, INDIGO_500, BLACK),
-    # (BLUE_100, BLUE_500, BLACK),
-    # (LIGHT_BLUE_100, BLACK),
-    # (CYAN_100, BLACK),
-    # (TEAL_100, BLACK),
+    (RED_900, RED_200, WHITE),
+    (PINK_900, PINK_200, WHITE),
+    (PURPLE_900, PINK_300, WHITE),
+    (DEEP_PURPLE_900, DEEP_PURPLE_500, WHITE),
+    (INDIGO_900, INDIGO_500, WHITE),
+    (BLUE_900, BLUE_500, WHITE),
+    (LIGHT_BLUE_900, LIGHT_BLUE_600, WHITE),
+    (CYAN_900, CYAN_600, WHITE),
+    (TEAL_900, TEAL_600, WHITE),
+    (GREEN_900, GREEN_800, WHITE),
+    (LIGHT_GREEN_900, LIGHT_GREEN_800, WHITE),
+    (LIME_900, LIME_600, WHITE),
+    (YELLOW_900, YELLOW_200, WHITE),
+    (AMBER_900, AMBER_200, WHITE),
+    (ORANGE_900, ORANGE_200, WHITE),
+    (DEEP_ORANGE_900, DEEP_ORANGE_200, WHITE),
+    (RED_100, RED_500, BLACK),
+    (PINK_100, PINK_500, BLACK),
+    (PURPLE_100, PINK_500, BLACK),
+    (DEEP_PURPLE_100, DEEP_PURPLE_500, BLACK),
+    (INDIGO_100, INDIGO_500, BLACK),
+    (BLUE_100, BLUE_500, BLACK),
+    (LIGHT_BLUE_100, LIGHT_BLUE_600, BLACK),
+    (CYAN_100, CYAN_600, BLACK),
+    (TEAL_100, TEAL_600, BLACK),
     (GREEN_200, GREEN_800, BLACK),
-    # (LIGHT_GREEN_200, LIGHT_GREEN_800, BLACK),
-    # (LIME_100, BLACK),
-    # (YELLOW_100, LIME_100, BLACK),
-    # (AMBER_100, BLACK),
-    # (ORANGE_100, BLACK),
-    # (DEEP_ORANGE_100, BLACK),
+    (LIGHT_GREEN_200, LIGHT_GREEN_800, BLACK),
+    (LIME_100, LIME_600, BLACK),
+    (YELLOW_100, YELLOW_600, BLACK),
+    (AMBER_100, AMBER_600, BLACK),
+    (ORANGE_100, ORANGE_600, BLACK),
+    (DEEP_ORANGE_100, DEEP_ORANGE_500, BLACK),
 )
+
+BN_COLORS_COMBINATIONS = [
+    # (GRAY_200, GRAY_500, BLACK),
+    # (GRAY_300, GRAY_600, BLACK),
+    (GRAY_900, GRAY_700, WHITE),
+]
 
 # define default font types
 # FONT_TEXT = 'fonts/KeplerStd-Bold-Italic.otf',
 FONT_TEXT = 'fonts/Roboto-Black.ttf'
 FONT_NAME_TAG = 'fonts/KeplerStd-Bold-Italic.otf'
-
-default_configs = {
-    'font_text': FONT_TEXT,
-    'font_name_tag': FONT_NAME_TAG,
-    'colors_combinations': COLORS_COMBINATIONS
-}
 
 
 class Resolutions(Enum):
@@ -60,9 +75,6 @@ class Paginator:
         :param name_tag: the name tag, to show in the post, if None no name_tag will be shown
         """
 
-        # global configs for the Paginator
-        self.configs: dict = default_configs
-
         self.logo_path = logo_path
         self.name_tag = name_tag
 
@@ -73,14 +85,13 @@ class Paginator:
         self.y_origin = self.height // 7  # align text on left virtual border
 
         # select a random color combination
-        color_combinations = self.configs.get('colors_combinations', COLORS_COMBINATIONS)
-        idx = randrange(0, len(color_combinations))
-        color_selection = color_combinations[idx]
+        idx = randrange(0, len(colors))
+        color = colors[idx]
 
         # load colors from the tuple
-        self.background_color = color_selection[0]
-        self.primary_color = color_selection[1]
-        self.text_color = color_selection[2]
+        self.background_color = color[0]
+        self.primary_color = color[1]
+        self.text_color = color[2]
 
         # check if the background is dark
         self.is_dark = False
@@ -140,15 +151,37 @@ class Paginator:
         )
         return image
 
-    def _draw_logo(self, color=None):
-        logo = self._open_image(self.logo_path, color=color)
-        self._resize_image(logo, (0.12, 0.12))
+    def _draw_logo(self, color=None, logo_position='right-down'):
 
-        logo_width, logo_height = logo.size
-        offset = [
-            (self.width - logo_width - self.width//20),
-            (self.height - logo_height - self.height//20)
-        ]
+        logo = self._open_image(self.logo_path, color=color)
+
+        # check if is center
+        # center position need different resize
+        if logo_position == 'center':
+            self._resize_image(logo, (1, 1))
+            logo_width, logo_height = logo.size
+            offset = [
+                ((self.width  - logo_width)//2),
+                ((self.height - logo_height)//2)
+            ]
+
+        else:
+            self._resize_image(logo, (0.12, 0.12))
+            logo_width, logo_height = logo.size
+
+            # compute position for the small logo
+            choices = {
+                'right-up': [self.width - logo_width - self.width//20, self.height//20],
+                'left-up': [self.width//20, self.height//20],
+                'center-up': [(self.width - logo_width)//2, self.height//20],
+                'right-down': [self.width//20, self.height - logo_height - self.height//20],
+                'left-down': [self.width - logo_width - self.width//20, self.height - logo_height - self.height//20],
+                'center-down': [(self.width - logo_width)//2, self.height - logo_height - self.height//20],
+            }
+            try:
+                offset = choices[logo_position]
+            except KeyError:
+                offset = choices['right-down']
 
         # merge Logo with background keeping the transparency layer
         self.image.paste(logo, offset, mask=logo)
@@ -177,7 +210,7 @@ class Paginator:
         font_name_tag_dim = self.width * self.height // 35000
 
         font_name_tag = self._load_font(
-            self.configs.get('font_name_tag', default_configs.get('font_name_tag')),
+            FONT_NAME_TAG,
             font_name_tag_dim
         )
 
@@ -196,22 +229,34 @@ class Paginator:
             fill=self.text_color
         )
 
-    def paginate_text(self, text, text_align='left', line_position='center', colorize_logo=False):
+    def paginate_text(
+            self,
+            text,
+            top_image='quotation-marks',
+            text_align='left',
+            line_position='center',
+            colorize_logo=False,
+            logo_position='center-up'
+    ):
         """
         Paginator is designed with a 1080 pixel resolution
         it will not scale up and down based on that if the height and height will be changed.
         Not tested with non square resolutions.
 
         :param text: the text that have to be put in the image
+        :param top_image: the image that define what type of post is this
         :param text_align: align center, left, right
         :param line_position: draw the line bottom, left, right, if None no line
         :param colorize_logo: true  or false if the logo have to be colored with primary_color
+        :param logo_position: center, center-up, center-down, right-down, left-down, right-up, left-up
+            the position where display the logo image
         """
         # Draw the logo
-        logo_color = None
         if colorize_logo:
             logo_color = self.primary_color
-        self._draw_logo(color=logo_color)
+        else:
+            logo_color = self.text_color
+        self._draw_logo(color=logo_color, logo_position=logo_position)
 
         # if there is no text return just the template
         if text:
@@ -226,7 +271,7 @@ class Paginator:
             # g(x)=(190)/(0.025*x+1.4)+25
             font_dim = (font_text_max_dim / (0.025 * len(text) + 1.4) + font_text_mim_dim)
             font_text = self._load_font(
-                self.configs.get('font_text', default_configs.get('font_text')),
+                FONT_TEXT,
                 font_dim
             )
 
@@ -244,22 +289,23 @@ class Paginator:
             line_width, line_height = font_text.getsize(lines[0])
             y_text = self.height / 2 - line_height / 2 * len(lines)
 
-            # merge Quotation Marks with background keeping the transparency layer
-            # Position: just over the text
-            quotation_marks = self._open_image(QUOTATION_MARKS_DIR, color=self.primary_color)
-            self._resize_image(quotation_marks, (0.08, 0.08))
-            qm_width, qm_height = quotation_marks.size
-            offset = (self.x_origin, int(y_text - qm_height*1.5))
+            if top_image:
+                # merge Quotation Marks with background keeping the transparency layer
+                # Position: just over the text
+                quotation_marks = self._open_image(QUOTATION_MARKS_DIR, color=self.primary_color)
+                self._resize_image(quotation_marks, (0.08, 0.08))
+                qm_width, qm_height = quotation_marks.size
+                offset = (self.x_origin, int(y_text - qm_height*1.5))
 
-            # draw circle before paste quotation marks
-            """
-            bd = qm_width/4
-            self.draw.ellipse(
-                [(offset[0] - bd, offset[1] - bd), (offset[0] + qm_width + bd, offset[1] + qm_width + bd)],
-                fill=self.primary_color,
-            )
-            """
-            self.image.paste(quotation_marks, offset, mask=quotation_marks)
+                # draw circle before paste quotation marks
+                """
+                bd = qm_width/4
+                self.draw.ellipse(
+                    [(offset[0] - bd, offset[1] - bd), (offset[0] + qm_width + bd, offset[1] + qm_width + bd)],
+                    fill=self.primary_color,
+                )
+                """
+                self.image.paste(quotation_marks, offset, mask=quotation_marks)
 
             # TEXT --------------------------------------------------------------
             # | |*|*|*|*|*| |
