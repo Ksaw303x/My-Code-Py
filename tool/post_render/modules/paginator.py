@@ -10,37 +10,41 @@ from .colors import *
 # color combinations for the canvas (background, text)
 # a function will select randomly a color set
 COLORS_COMBINATIONS = [
-    (RED_100, RED_800, BLACK),
-    (PINK_100, PINK_800, BLACK),
-    (PURPLE_100, PINK_800, BLACK),
-    (DEEP_PURPLE_100, DEEP_PURPLE_900, BLACK),
-    (INDIGO_100, INDIGO_900, BLACK),
-    (BLUE_100, BLUE_900, BLACK),
+    # (RED_100, RED_500, BLACK),
+    # (RED_900, RED_200, WHITE),
+    # (PINK_100, PINK_500, BLACK),
+    # (PURPLE_100, PINK_500, BLACK),
+    # (DEEP_PURPLE_100, DEEP_PURPLE_500, BLACK),
+    # (INDIGO_100, INDIGO_500, BLACK),
+    # (BLUE_100, BLUE_500, BLACK),
     # (LIGHT_BLUE_100, BLACK),
     # (CYAN_100, BLACK),
-    # (TEAL, BLACK),
-    # (GREEN, BLACK),
-    # (LIGHT_GREEN, BLACK),
-    # (LIME, BLACK),
-    # (YELLOW, BLACK),
-    # (AMBER, BLACK),
-    # (ORANGE, BLACK),
-    # (DEEP_ORANGE, BLACK),
+    # (TEAL_100, BLACK),
+    # (GREEN_200, GREEN_800, BLACK),
+    (LIGHT_GREEN_200, LIGHT_GREEN_800, BLACK),
+    # (LIME_100, BLACK),
+    # (YELLOW_100, LIME_100, BLACK),
+    # (AMBER_100, BLACK),
+    # (ORANGE_100, BLACK),
+    # (DEEP_ORANGE_100, BLACK),
 ]
+
+# define default font types
+FONT_TEXT = 'fonts/Roboto-Black.ttf'
+FONT_NAME_TAG = 'fonts/KeplerStd-Bold-Italic.otf'
 
 
 default_configs = {
     # 'font_text': 'fonts/KeplerStd-Bold-Italic.otf',
-    'font_text': 'fonts/Roboto-Black.ttf',
-    'font_text_dim': 180,
-    'font_name_tag': 'fonts/KeplerStd-Bold-Italic.otf',
-    'font_name_tag_dim': 35,
+    'font_text': FONT_TEXT,
+    'font_name_tag': FONT_NAME_TAG,
+    'line': 'under',  # under, side, None
     'colors_combinations': COLORS_COMBINATIONS
-
 }
 
 
 class Resolutions(Enum):
+    """Resolution data for the platform"""
     INSTAGRAM = (1080, 1080)
     TWITTER = (1200, 675)
     LOW = (750, 750)
@@ -50,10 +54,8 @@ class Paginator:
 
     def __init__(self, logo_path, name_tag, resolution: tuple):
         """
-        instagram optimal res = 1080 X 1080
-        twitter optimal res = 1200 X 675
-        :param logo_path:
-        :param name_tag:
+        :param logo_path: the logo relative directory
+        :param name_tag: the name tag, to show in the post, if None no name_tag will be shown
         :param resolution: the resolution at tuple (width, height
         """
 
@@ -70,8 +72,11 @@ class Paginator:
         self.y_origin = self.height // 7  # align text on left virtual border
 
         # select a random color combination
-        idx = randrange(0, len(COLORS_COMBINATIONS))
-        color_selection = COLORS_COMBINATIONS[idx]
+        color_combinations = self.configs.get('colors_combinations', COLORS_COMBINATIONS)
+        idx = randrange(0, len(color_combinations))
+        color_selection = color_combinations[idx]
+
+        # load colors from the tuple
         self.background_color = color_selection[0]
         self.primary_color = color_selection[1]
         self.text_color = color_selection[2]
@@ -99,7 +104,8 @@ class Paginator:
         :return: the img obj
         """
         full_img_dir = f'{os.path.dirname(os.path.realpath(__file__))}/{img_dir}'
-        img = Image.open(full_img_dir).convert('RGBA')
+        img = Image.open(full_img_dir)
+        img.convert('RGBA')
         return img
 
     def _resize_image(self, image, size=(0.9, 0.8)):
@@ -142,11 +148,20 @@ class Paginator:
         )
 
     def _draw_name_tag(self, position=None):
-        """draw name tag"""
+        """
+            draw name tag
+        """
+
+        # no name tag is defined, abort
+        if not self.name_tag:
+            return
+
+        # generate the name tag dimension based on the resolution
+        font_name_tag_dim = self.width * self.height // 35000
 
         font_name_tag = self._load_font(
             self.configs.get('font_name_tag', default_configs.get('font_name_tag')),
-            self.configs.get('font_name_tag_dim', default_configs.get('font_name_tag_dim'))
+            font_name_tag_dim
         )
 
         name_tag_width, name_tag_height = font_name_tag.getsize(self.name_tag)
@@ -176,25 +191,26 @@ class Paginator:
 
         # if there is no text return just the template
         if text:
-            font_text_dim = self.configs.get('font_text_dim', default_configs.get('font_text_dim'))
+            # Calculate the font base dimension based on the resolution
+            font_text_max_dim = self.width * self.height // 6000
+            font_text_mim_dim = self.width * self.height // 45000
+            print(font_text_mim_dim)
 
-
-            # calculate the font dimension based on the length of the text
+            # resize the font dimension based on the length of the text
             # y = (x * text_len + 1) reduce the text based on the text len (front_dim / y)
-            # g(x)=(80)/(x*0.02+1.4)+12
+            # g(x)=(190)/(0.025*x+1.4)+25
             # 50 is the base text dimension
-            font_dim = (font_text_dim / (0.025 * len(text) + 1.4) + 25)
+
+            font_dim = (font_text_max_dim / (0.025 * len(text) + 1.4) + font_text_mim_dim)
             font_text = self._load_font(
                 self.configs.get('font_text', default_configs.get('font_text')),
                 font_dim
             )
 
             # wrap text
-            # inversely proportional to the font_dim
-            # width_dim = (100 / (font_dim + 1) * 12) - 6 (old)
+            # inversely proportional to the font_dim, based on the image width
             # h(x)=(100)/(x+12)*14-8
-            # adjust the text with the
-            width_dim = ((100 / (font_dim + 8) * 18) + (self.width/500))
+            width_dim = ((100 / (font_dim + 8) * (12*(self.width/600))) - 2)
             lines = textwrap.wrap(text, width=int(width_dim))
 
             # debug
@@ -213,10 +229,9 @@ class Paginator:
             self.image.paste(quotation_marks, offset, mask=quotation_marks)
 
             # | |*|*|*|*|*| |
-            # draw the text
-            # save the longest line
-            longest_line = line_width
-            y_text_start = y_text
+            # draw the text, center the text in 5/7 of the space, 1/7 border on each side
+            longest_line = line_width  # save the longest line, for underline
+            y_text_start = y_text  # save first line position, for side line
 
             for line in lines:
 
@@ -243,7 +258,7 @@ class Paginator:
             self.draw.line(
                 coords,
                 width=int(self.height/100),
-                fill=self.text_color
+                fill=self.primary_color
             )
 
             self._draw_name_tag(y_text+line_height)
@@ -288,7 +303,7 @@ class Paginator:
         converted.save(img_bytes, format='JPEG', subsampling=0, quality=100)
         img_bytes.seek(0)
 
-        converted.save('test.jpeg', format='PNG')
+        converted.save('test.jpeg')
         converted.show()
 
         return img_bytes
