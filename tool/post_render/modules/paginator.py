@@ -388,6 +388,9 @@ class Paginator:
                 if text_align == 'center':
                     origin = (self.width//2 - longest_line//2)
                     xy = [(origin, y_text), (origin + longest_line, y_text)]
+                elif text_align == 'right':
+                    x_origin = self.width - self.x_origin - longest_line
+                    xy = [(x_origin, y_text), (x_origin + longest_line, y_text)]
                 else:
                     xy = [(self.x_origin, y_text), (self.x_origin + longest_line, y_text)]
             else:
