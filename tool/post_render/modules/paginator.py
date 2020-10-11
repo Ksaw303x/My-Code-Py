@@ -1,19 +1,21 @@
 import os
 import textwrap
+from enum import Enum
 from io import BytesIO
 from random import randrange
 from PIL import Image, ImageDraw, ImageFont
 from .colors import *
 
+
 # color combinations for the canvas (background, text)
 # a function will select randomly a color set
 COLORS_COMBINATIONS = [
-    (RED_100, BLACK),
-    (PINK_100, BLACK),
-    (PURPLE_100, BLACK),
-    (DEEP_PURPLE_100, BLACK),
-    (INDIGO_100, BLACK),
-    (BLUE_100, BLACK),
+    (RED_100, RED_800, BLACK),
+    (PINK_100, PINK_800, BLACK),
+    (PURPLE_100, PINK_800, BLACK),
+    (DEEP_PURPLE_100, DEEP_PURPLE_900, BLACK),
+    (INDIGO_100, INDIGO_900, BLACK),
+    (BLUE_100, BLUE_900, BLACK),
     # (LIGHT_BLUE_100, BLACK),
     # (CYAN_100, BLACK),
     # (TEAL, BLACK),
@@ -27,27 +29,52 @@ COLORS_COMBINATIONS = [
 ]
 
 
+default_configs = {
+    # 'font_text': 'fonts/KeplerStd-Bold-Italic.otf',
+    'font_text': 'fonts/Roboto-Black.ttf',
+    'font_text_dim': 180,
+    'font_name_tag': 'fonts/KeplerStd-Bold-Italic.otf',
+    'font_name_tag_dim': 35,
+    'colors_combinations': COLORS_COMBINATIONS
+
+}
+
+
+class Resolutions(Enum):
+    INSTAGRAM = (1080, 1080)
+    TWITTER = (1200, 675)
+    LOW = (750, 750)
+
+
 class Paginator:
 
-    def __init__(self, logo_path, name_tag):
+    def __init__(self, logo_path, name_tag, resolution: tuple):
+        """
+        instagram optimal res = 1080 X 1080
+        twitter optimal res = 1200 X 675
+        :param logo_path:
+        :param name_tag:
+        :param resolution: the resolution at tuple (width, height
+        """
+
+        # global configs for the Paginator
+        self.configs: dict = default_configs
 
         self.logo_path = logo_path
         self.name_tag = name_tag
 
-        self.width = 1080
-        self.height = 1080
+        self.width = resolution[0]
+        self.height = resolution[1]
 
         self.x_origin = self.width // 7  # align text on left virtual border
         self.y_origin = self.height // 7  # align text on left virtual border
 
         # select a random color combination
         idx = randrange(0, len(COLORS_COMBINATIONS))
-        self.background_color = COLORS_COMBINATIONS[idx][0]
-        self.text_color = COLORS_COMBINATIONS[idx][1]
-
-        # font directory
-        self.font_dir = '{}/fonts/KeplerStd-Bold-Italic.otf'.format(os.path.dirname(os.path.realpath(__file__)))
-        self.font_dir_name_tah = '{}/fonts/KeplerStd-Italic.otf'.format(os.path.dirname(os.path.realpath(__file__)))
+        color_selection = COLORS_COMBINATIONS[idx]
+        self.background_color = color_selection[0]
+        self.primary_color = color_selection[1]
+        self.text_color = color_selection[2]
 
         # generate the empty canvas with a color
         self.image = Image.new('RGBA', (self.width, self.height), self.background_color)
@@ -57,6 +84,12 @@ class Paginator:
 
         # draw a rectangle as outside border of the text
         self.rectangle_offset = 15
+
+    @staticmethod
+    def _load_font(font_dir, dim):
+        font_full_dir = f'{os.path.dirname(os.path.realpath(__file__))}/{font_dir}'
+        font = ImageFont.truetype(font_full_dir, int(dim))
+        return font
 
     @staticmethod
     def _open_image(img_dir):
@@ -87,10 +120,13 @@ class Paginator:
 
     def _draw_logo(self):
         logo = self._open_image(self.logo_path)
-        self._resize_image(logo, (0.5, 0.5))
+        self._resize_image(logo, (0.12, 0.12))
 
         logo_width, logo_height = logo.size
-        offset = ((self.width - logo_width), (self.height - logo_height))
+        offset = [
+            (self.width - logo_width - self.width//20),
+            (self.height - logo_height - self.height//20)
+        ]
 
         # merge Logo with background keeping the transparency layer
         self.image.paste(logo, offset, mask=logo)
@@ -107,7 +143,11 @@ class Paginator:
 
     def _draw_name_tag(self, position=None):
         """draw name tag"""
-        font_name_tag = ImageFont.truetype(self.font_dir, int(45))
+
+        font_name_tag = self._load_font(
+            self.configs.get('font_name_tag', default_configs.get('font_name_tag')),
+            self.configs.get('font_name_tag_dim', default_configs.get('font_name_tag_dim'))
+        )
 
         name_tag_width, name_tag_height = font_name_tag.getsize(self.name_tag)
         # x = self.width - line_width - self.rectangle_offset - 25
@@ -134,63 +174,74 @@ class Paginator:
         """
         self._draw_logo()
 
-        quotation_marks = self._open_image('img/quotation-marks.png')
-        self._resize_image(quotation_marks, (0.2, 0.2))
-
         # if there is no text return just the template
         if text:
-            font_max_dim = 180
+            font_text_dim = self.configs.get('font_text_dim', default_configs.get('font_text_dim'))
+
 
             # calculate the font dimension based on the length of the text
-            # y = (x * text_len + 1) reduce the text linearly based on the text len (front_dim / y)
+            # y = (x * text_len + 1) reduce the text based on the text len (front_dim / y)
             # g(x)=(80)/(x*0.02+1.4)+12
             # 50 is the base text dimension
-            font_dim = (font_max_dim / (0.025 * len(text) + 1.4) + 25)
-            font = ImageFont.truetype(self.font_dir, int(font_dim))
+            font_dim = (font_text_dim / (0.025 * len(text) + 1.4) + 25)
+            font_text = self._load_font(
+                self.configs.get('font_text', default_configs.get('font_text')),
+                font_dim
+            )
 
             # wrap text
             # inversely proportional to the font_dim
             # width_dim = (100 / (font_dim + 1) * 12) - 6 (old)
             # h(x)=(100)/(x+12)*14-8
-            width_dim = ((100 / (font_dim + 12) * 17) + 1)
+            # adjust the text with the
+            width_dim = ((100 / (font_dim + 8) * 18) + (self.width/500))
             lines = textwrap.wrap(text, width=int(width_dim))
 
             # debug
-            # print('text len: {} - font dim: {} - width_dim: {}'.format(len(text), font_dim, width_dim))
+            print('text len: {} - font dim: {} - width_dim: {}'.format(len(text), font_dim, width_dim))
 
             # calculate the center of the text
-            line_width, line_height = font.getsize(lines[0])
+            line_width, line_height = font_text.getsize(lines[0])
             y_text = self.height / 2 - line_height / 2 * len(lines)
 
             # merge Quotation Marks with background keeping the transparency layer
             # in position just over the text
+            quotation_marks = self._open_image('img/quotation-marks.png')
+            self._resize_image(quotation_marks, (0.08, 0.08))
             qm_width, qm_height = quotation_marks.size
-            offset = (self.x_origin, int(y_text - qm_height))
+            offset = (self.x_origin, int(y_text - qm_height*1.5))
             self.image.paste(quotation_marks, offset, mask=quotation_marks)
 
             # | |*|*|*|*|*| |
             # draw the text
             # save the longest line
             longest_line = line_width
+            y_text_start = y_text
 
             for line in lines:
 
-                line_width, line_height = font.getsize(line)
+                line_width, line_height = font_text.getsize(line)
                 if line_width > longest_line:
                     longest_line = line_width
 
                 self.draw.text(
                     (self.x_origin, y_text),
                     line,
-                    font=font,
+                    font=font_text,
                     fill=self.text_color
                 )
                 y_text += line_height
 
-            y_text += line_height
+            # draw line under or aside of the text
+            line_position = True
+            if line_position:
+                y_text += line_height
+                coords = [(self.x_origin, y_text), (longest_line, y_text)]
+            else:
+                coords = [(self.x_origin/(3/2), y_text_start), (self.x_origin/(3/2), y_text)]
             # draw a line under the text, before tag name
             self.draw.line(
-                [(self.x_origin, y_text), (longest_line, y_text)],
+                coords,
                 width=int(self.height/100),
                 fill=self.text_color
             )
