@@ -81,6 +81,8 @@ class Paginator:
         self.width = resolution[0]
         self.height = resolution[1]
 
+        self.image_resolution = self.width * self.height
+
         self.x_origin = self.width // 7  # align text on left virtual border
         self.y_origin = self.height // 7  # align text on left virtual border
 
@@ -167,7 +169,7 @@ class Paginator:
         # center position need different resize
         if logo_position == 'center':
             logo = self._open_image(self.logo_path, color=color, opacity=15)
-            self._resize_image(logo, (0.9, 0.9))
+            self._resize_image(logo, (0.8, 0.8))
             logo_width, logo_height = logo.size
             offset = [
                 ((self.width - logo_width)//2),
@@ -197,14 +199,16 @@ class Paginator:
         self.image.paste(logo, offset, mask=logo)
 
     def _draw_rectangle(self):
-        offset = 15
+        x_offset = self.width//16
+        y_offset = self.height//16
+
         self.draw.rectangle(
             [
-                (offset, offset),
-                (self.width - offset, self.height - offset)
+                (x_offset, y_offset),
+                (self.width - x_offset, self.height - y_offset)
             ],
             outline=self.text_color,
-            width=6
+            width=self.image_resolution//40000
         )
 
     def _draw_name_tag(self, align='right', y_position=None):
@@ -219,7 +223,7 @@ class Paginator:
             return
 
         # generate the name tag dimension based on the resolution
-        font_name_tag_dim = self.width * self.height // 35000
+        font_name_tag_dim = self.image_resolution // 35000
 
         font_name_tag = self._load_font(
             FONT_NAME_TAG,
@@ -261,7 +265,8 @@ class Paginator:
             text_align='left',
             line_position='center',
             colorize_logo=False,
-            logo_position='center-up'
+            logo_position='center-up',
+            rectangle=False
     ):
         """
         Paginator is designed with a 1080 pixel resolution
@@ -274,8 +279,13 @@ class Paginator:
         :param line_position: draw the line bottom, left, right, if None no line
         :param colorize_logo: true  or false if the logo have to be colored with primary_color
         :param logo_position: center, center-up, center-down, right-down, left-down, right-up, left-up
+        :param rectangle: draw a border on the post
             the position where display the logo image
         """
+
+        if rectangle:
+            self._draw_rectangle()
+
         # Draw the logo
         if colorize_logo:
             logo_color = self.primary_color

@@ -16,7 +16,8 @@ def run(arg):
             text_align='center',
             line_position='center',
             colorize_logo=False,
-            logo_position='center'
+            logo_position='center',
+            rectangle=True
         )
         print(time() - t1)
 
