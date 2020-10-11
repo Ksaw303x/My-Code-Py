@@ -1,15 +1,18 @@
 import os
 import textwrap
+from typing import List
 from enum import Enum
 from io import BytesIO
 from random import randrange
 from PIL import Image, ImageDraw, ImageFont
+from numpy import array
 from .colors import *
 
+QUOTATION_MARKS_DIR = 'img/assets/quotation-marks.png'
 
 # color combinations for the canvas (background, text)
 # a function will select randomly a color set
-COLORS_COMBINATIONS = [
+COLORS_COMBINATIONS = (
     # (RED_100, RED_500, BLACK),
     # (RED_900, RED_200, WHITE),
     # (PINK_100, PINK_500, BLACK),
@@ -27,18 +30,16 @@ COLORS_COMBINATIONS = [
     # (AMBER_100, BLACK),
     # (ORANGE_100, BLACK),
     # (DEEP_ORANGE_100, BLACK),
-]
+)
 
 # define default font types
 # FONT_TEXT = 'fonts/KeplerStd-Bold-Italic.otf',
 FONT_TEXT = 'fonts/Roboto-Black.ttf'
 FONT_NAME_TAG = 'fonts/KeplerStd-Bold-Italic.otf'
 
-
 default_configs = {
     'font_text': FONT_TEXT,
     'font_name_tag': FONT_NAME_TAG,
-    'line': 'under',  # under, side, None
     'colors_combinations': COLORS_COMBINATIONS
 }
 
@@ -52,10 +53,10 @@ class Resolutions(Enum):
 
 class Paginator:
 
-    def __init__(self, logo_path, resolution: tuple, name_tag=None):
+    def __init__(self, logo_path, resolution: tuple, name_tag=None, colors: List[tuple] = COLORS_COMBINATIONS):
         """
         :param logo_path: the logo relative directory
-        :param resolution: the resolution at tuple (width, height
+        :param resolution: the resolution at tuple (width, height)
         :param name_tag: the name tag, to show in the post, if None no name_tag will be shown
         """
 
@@ -81,14 +82,16 @@ class Paginator:
         self.primary_color = color_selection[1]
         self.text_color = color_selection[2]
 
+        # check if the background is dark
+        self.is_dark = False
+        if self.text_color == WHITE:
+            self.is_dark = True
+
         # generate the empty canvas with a color
         self.image = Image.new('RGBA', (self.width, self.height), self.background_color)
 
         # create the draw obj
         self.draw = ImageDraw.Draw(self.image)
-
-        # draw a rectangle as outside border of the text
-        self.rectangle_offset = 15
 
     @staticmethod
     def _load_font(font_dir, dim):
@@ -97,15 +100,28 @@ class Paginator:
         return font
 
     @staticmethod
-    def _open_image(img_dir):
+    def _open_image(img_dir, color=None):
         """
         Open an image and convert it to RGBA
         :param img_dir: relative directory
         :return: the img obj
         """
         full_img_dir = f'{os.path.dirname(os.path.realpath(__file__))}/{img_dir}'
-        img = Image.open(full_img_dir)
-        img.convert('RGBA')
+        img = Image.open(full_img_dir).convert('RGBA')
+
+        if color:
+            h = color.lstrip('#')
+            future_color = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+            data = array(img)  # "data" is a height x width x 4 numpy array
+            red, green, blue, alpha = data.T  # Temporarily unpack the bands for readability
+
+            # Replace white with red... (leaves alpha values alone...)
+            white_areas = (red == 255) & (blue == 255) & (green == 255)
+            data[..., :-1][white_areas.T] = future_color  # set the new color
+
+            img = Image.fromarray(data)
+
         return img
 
     def _resize_image(self, image, size=(0.9, 0.8)):
@@ -124,8 +140,8 @@ class Paginator:
         )
         return image
 
-    def _draw_logo(self):
-        logo = self._open_image(self.logo_path)
+    def _draw_logo(self, color=None):
+        logo = self._open_image(self.logo_path, color=color)
         self._resize_image(logo, (0.12, 0.12))
 
         logo_width, logo_height = logo.size
@@ -138,10 +154,11 @@ class Paginator:
         self.image.paste(logo, offset, mask=logo)
 
     def _draw_rectangle(self):
+        offset = 15
         self.draw.rectangle(
             [
-                (self.rectangle_offset, self.rectangle_offset),
-                (self.width - self.rectangle_offset, self.height - self.rectangle_offset)
+                (offset, offset),
+                (self.width - offset, self.height - offset)
             ],
             outline=self.text_color,
             width=6
@@ -179,7 +196,7 @@ class Paginator:
             fill=self.text_color
         )
 
-    def paginate_text(self, text, text_align='left', line_position='center'):
+    def paginate_text(self, text, text_align='left', line_position='center', colorize_logo=False):
         """
         Paginator is designed with a 1080 pixel resolution
         it will not scale up and down based on that if the height and height will be changed.
@@ -188,8 +205,13 @@ class Paginator:
         :param text: the text that have to be put in the image
         :param text_align: align center, left, right
         :param line_position: draw the line bottom, left, right, if None no line
+        :param colorize_logo: true  or false if the logo have to be colored with primary_color
         """
-        self._draw_logo()
+        # Draw the logo
+        logo_color = None
+        if colorize_logo:
+            logo_color = self.primary_color
+        self._draw_logo(color=logo_color)
 
         # if there is no text return just the template
         if text:
@@ -224,7 +246,7 @@ class Paginator:
 
             # merge Quotation Marks with background keeping the transparency layer
             # Position: just over the text
-            quotation_marks = self._open_image('img/quotation-marks.png')
+            quotation_marks = self._open_image(QUOTATION_MARKS_DIR, color=self.primary_color)
             self._resize_image(quotation_marks, (0.08, 0.08))
             qm_width, qm_height = quotation_marks.size
             offset = (self.x_origin, int(y_text - qm_height*1.5))
@@ -278,23 +300,25 @@ class Paginator:
                 ]
             elif line_position == 'left':
                 xy = [(self.x_origin / (3 / 2), y_text_start), (self.x_origin / (3 / 2), y_text)]
-            else:
+            elif line_position == 'center':
                 y_text += line_height
                 # if the line_position is bottom and the text_align is center
                 # then center also the line
                 if text_align == 'center':
                     origin = (self.width//2 - longest_line//2)
                     xy = [(origin, y_text), (origin + longest_line, y_text)]
-                    print(xy)
                 else:
                     xy = [(self.x_origin, y_text), (self.x_origin + longest_line, y_text)]
+            else:
+                xy = None
 
             # draw a line under the text, before tag name
-            self.draw.line(
-                xy,
-                width=int(self.height/100),
-                fill=self.primary_color
-            )
+            if xy:
+                self.draw.line(
+                    xy,
+                    width=int(self.height/100),
+                    fill=self.primary_color
+                )
 
             self._draw_name_tag(y_text+line_height)
 

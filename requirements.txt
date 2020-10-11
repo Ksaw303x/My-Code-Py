@@ -11,3 +11,5 @@ TikTokApi
 python-twitter
 
 svgwrite
+numpy
+pillow

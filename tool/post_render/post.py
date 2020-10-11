@@ -8,7 +8,7 @@ def run(arg):
     resolutions = [Resolutions.INSTAGRAM.value,]  # Resolutions.TWITTER.value]
     for res in resolutions:
         t1 = time()
-        paginator = Paginator('img/uniud-icon-b-s.png', res, name_tag)
+        paginator = Paginator('img/uniud/icon.png', res, name_tag)
         paginator.paginate_text(arg)
         print(time() - t1)
 
