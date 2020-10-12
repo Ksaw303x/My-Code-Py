@@ -147,7 +147,7 @@ class Paginator:
 
         return img
 
-    def _resize_image(self, image, size=(0.9, 0.8)):
+    def _resize_image(self, image, size=(0.95, 0.95)):
         """
         Resize a given image, by size factor respect the canvas dimension
         keeping intact the form factor.
@@ -175,6 +175,15 @@ class Paginator:
                 ((self.width - logo_width)//2),
                 ((self.height - logo_height)//2)
             ]
+
+        elif logo_position == 'auto':
+            # put the logo randomly
+            logo = self._open_image(self.logo_path, color=color, opacity=50)
+            self._resize_image(logo, (0.15, 0.15))
+            logo_width, logo_height = logo.size
+            rand_x = randrange(self.width//20, self.width - logo_width - self.width//20)
+            rand_y = randrange(self.height//20, self.height - logo_height - self.height//20)
+            offset = rand_x, rand_y
 
         else:
             logo = self._open_image(self.logo_path, color=color)
@@ -409,20 +418,17 @@ class Paginator:
         else:
             self._draw_name_tag(align=text_align)
 
-    def paginate_image(self, image: bytearray):
+    def paginate_image(self, image, image_scale=(1, 1), colorize_logo=False, logo_position='auto'):
         """
         :param image: the image to paginate
+        :param image_scale: the scale of the image to paginate (1,1)=full screen with no borders
+        :param colorize_logo: true  or false if the logo have to be colored with primary_color
+        :param logo_position: put the logo in a specific position
         """
 
         # convert the byte-array image into pil image
         im = Image.open(image)
-
-        # resize the image
-        size = (int(self.width * 0.9), int(self.height * 0.8))
-        im.thumbnail(
-            size,
-            Image.ANTIALIAS
-        )
+        self._resize_image(im, image_scale)
 
         # center the image
         im_width, im_height = im.size
@@ -430,7 +436,14 @@ class Paginator:
 
         self.image.paste(im, offset)
 
-        self._draw_name_tag()
+        # Draw the logo
+        if colorize_logo:
+            logo_color = self.primary_color
+        else:
+            logo_color = self.text_color
+        self._draw_logo(color=logo_color, logo_position=logo_position)
+
+        # self._draw_name_tag()
 
     def get_image(self):
         """
@@ -452,7 +465,4 @@ class Paginator:
         return img_bytes
 
     def save_image(self, file_dir):
-        self.image.save(file_dir, format='PNG')
-
-    def show_image(self):
-        self.image.show()
+        self.image.save(file_dir, format='JPEG')

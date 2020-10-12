@@ -1,15 +1,71 @@
 from tool.post_render.modules.paginator import Paginator, Resolutions
 from time import time
+from io import BytesIO
+
+config_data = {
+        'uniud': {
+            'operators': ['123'],
+            'images': {
+                'image_scale': [1, 1],
+                'colorize_logo': False,
+                'logo_position': "auto"
+            },
+            'text': {
+                'spot': {
+                    'top_image': 'quotation-marks',
+                    'text_align': 'center',
+                    'line_position': None,
+                    'colorize_logo': True,
+                    'logo_position': 'center',
+                    'rectangle': True
+                }
+            }
+        }
+    }
+
+
+def get_configs(configs: dict, operator: str, configs_type: str):
+    """
+    :param configs: the main config file
+    :param operator: the id of the operator
+    :param configs_type: the type of configs you want: 'image' or 'text' etc
+    :return:
+    """
+
+    for key in configs.keys():
+        config_item = configs[key]
+        operators = config_item.get('operators')
+        if operator in operators:
+            return config_item.get(configs_type, {})
+
+    return {}
+
+
+def build_kwargs(configs: dict):
+    kwargs = {}
+    for key in configs.keys():
+        kwargs[key] = configs.get(key)
+    return kwargs
 
 
 def run(arg):
     name_tag = '@name_tag'
 
+    with open('img.jpeg', 'rb') as f:
+        image = BytesIO(f.read())
+
     resolutions = [Resolutions.TWITTER.value, Resolutions.INSTAGRAM.value]
+
+    # get the config data
+    configs = get_configs(config_data, '123', 'image')
+    kwargs = build_kwargs(configs)
 
     for res in resolutions:
         t1 = time()
-        paginator = Paginator('img/uniud/icon.png', res, name_tag)
+        paginator = Paginator('img/icons/uniud.png', res, name_tag)
+
+        paginator.paginate_image(image, **kwargs)
+        """
         paginator.paginate_text(
             arg,
             top_image='quotation-marks',
@@ -19,6 +75,7 @@ def run(arg):
             logo_position='center',
             rectangle=True
         )
+        """
         print(time() - t1)
 
         img = paginator.get_image()
