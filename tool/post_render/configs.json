@@ -1,6 +1,5 @@
 {
-    "uniud": {
-        "operators": ["123"],
+    "pavlov": {
         "images": {
             "image_scale": [1, 1],
             "colorize_logo": false,
@@ -13,6 +12,27 @@
                 "line_position": null,
                 "colorize_logo": true,
                 "logo_position": "center",
+                "name_tag_position": "fix-center-down",
+                "rectangle": true
+            }
+        }
+    },
+    "uniud": {
+        "operators": ["123"],
+        "name_tag": "spotted_uniud",
+        "images": {
+            "image_scale": [1, 1],
+            "colorize_logo": false,
+            "logo_position": "auto"
+        },
+        "text": {
+            "spot": {
+                "top_image": "quotation-marks",
+                "text_align": "center",
+                "line_position": null,
+                "colorize_logo": true,
+                "logo_position": "center",
+                "name_tag_position": "fix-center-down",
                 "rectangle": true
             }
         }

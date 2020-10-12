@@ -18,11 +18,11 @@ def get_configs(configs: dict, operator: str, configs_type: str):
 
     for key in configs.keys():
         config_item = configs[key]
-        operators = config_item.get('operators')
+        operators = config_item.get('operators', [])
         if operator in operators:
             return config_item.get(configs_type, {})
 
-    return {}
+    return configs['pavlov'].get(configs_type, {})
 
 
 def build_kwargs(configs: dict):
