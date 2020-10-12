@@ -1,27 +1,11 @@
 from tool.post_render.modules.paginator import Paginator, Resolutions
 from time import time
 from io import BytesIO
+import json
 
-config_data = {
-        'uniud': {
-            'operators': ['123'],
-            'images': {
-                'image_scale': [1, 1],
-                'colorize_logo': False,
-                'logo_position': "auto"
-            },
-            'text': {
-                'spot': {
-                    'top_image': 'quotation-marks',
-                    'text_align': 'center',
-                    'line_position': None,
-                    'colorize_logo': True,
-                    'logo_position': 'center',
-                    'rectangle': True
-                }
-            }
-        }
-    }
+
+with open('configs.json', 'r') as f:
+    config_data = json.loads(f.read())
 
 
 def get_configs(configs: dict, operator: str, configs_type: str):
