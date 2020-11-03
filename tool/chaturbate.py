@@ -14,7 +14,7 @@ if __name__ == '__main__':
     )
 
     cams = cams.filter_by(
-        age=lambda age: True if 18 <= age <= 18 else False,
+        age=lambda age: True if 19 <= age <= 19else False,
         uptime_min=lambda uptime_min: True if 30 <= uptime_min <= 200 else False,
         # spectators=lambda spectators: True if 1 <= spectators <= 20 else False,
     )

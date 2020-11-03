@@ -5,3 +5,7 @@
 /feed/img/
 /configs/
 /tool/twitter/config.cfg
+
+tool/creds.json
+tool/data/
+tool/logs/

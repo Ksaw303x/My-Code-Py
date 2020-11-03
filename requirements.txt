@@ -13,3 +13,8 @@ python-twitter
 svgwrite
 numpy
 pillow
+
+instapy
+schedule
+
+git+https://git@github.com/SpinPool/Chaturbate-API.git
