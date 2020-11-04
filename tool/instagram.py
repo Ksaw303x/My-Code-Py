@@ -16,6 +16,12 @@ with open('credentials.json', 'r') as f:
 set_workspace(path=os.getcwd() + '/data/')
 
 
+users_list = [
+    'spotted_mari',
+    'spottedmarinoni'
+]
+
+
 def job(username, password):
 
     session = InstaPy(
@@ -58,8 +64,8 @@ def job(username, password):
         # session.set_comments(["hi @{}, have a look", :heart_eyes: :heart_eyes: @{}"])
 
         session.set_user_interact(amount=3, randomize=True, percentage=100, media='Photo')
-        session.interact_user_following(['andrea_maestro_15'], amount=300)
-        # session.like_by_tags(['frasi', 'mountain'], amount=20)
+        session.interact_user_followers(users_list, amount=20)
+        session.like_by_tags(['amici', 'divertente', 'seguimi'], amount=100)
 
 
 def set_schedule():
