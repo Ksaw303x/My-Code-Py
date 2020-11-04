@@ -6,6 +6,7 @@
 /configs/
 /tool/twitter/config.cfg
 
-tool/creds.json
+tool/credentials.json
+tool/credentials_all.json
 tool/data/
 tool/logs/
