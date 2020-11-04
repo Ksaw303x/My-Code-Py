@@ -38,8 +38,10 @@ def job(username, password):
             enabled=True,
             peak_comments_daily=20,
             peak_comments_hourly=5,
-            peak_likes_daily=100,
+            peak_likes_daily=150,
             peak_likes_hourly=20,
+            peak_follows_hourly=10,
+            peak_follows_daily=50,
             sleep_after=['likes', 'follows'])
 
         session.set_action_delays(
