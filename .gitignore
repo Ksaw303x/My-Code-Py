@@ -5,6 +5,7 @@
 /feed/img/
 /configs/
 /tool/twitter/config.cfg
+/other/secrets.json
 
 tool/credentials.json
 tool/credentials_all.json
