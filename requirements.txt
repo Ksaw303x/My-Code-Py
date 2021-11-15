@@ -17,4 +17,6 @@ pillow
 instapy
 schedule
 
+discord_webhook
+
 git+https://git@github.com/SpinPool/Chaturbate-API.git
