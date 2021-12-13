@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option java_package = "ex.grpc";
+
+import "google/protobuf/empty.proto";
+
+package sample_points;
+
+// Define the Service
+service SamplePointsServer {
+  rpc All_Sample_points (google.protobuf.Empty) returns (GetAll_Sample_pointsResp) {}
+}
+
+message DMG_coords
+{
+  double lat_deg = 1;
+  double lon_deg = 2;
+}
+
+//Resp
+message GetAll_Sample_pointsResp
+{
+  //N times
+  repeated DMG_coords points = 1;
+}
