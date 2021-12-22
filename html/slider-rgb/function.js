@@ -32,7 +32,7 @@ const HSLToRGB = (h, s, l) => {
 
 function updateColor(){
   let colorHexVal = "#"
-  let color = HSLToRGB(hueValue, lightValue, saturationValue)
+  let color = HSLToRGB(hueValue, saturationValue, lightValue)
   color.forEach((value) => {
     colorHexVal += parseInt(value, 10).toString(16).padStart(2, "0")
   })
@@ -46,15 +46,14 @@ h.addEventListener('input', () => {
   updateColor()
 }, false);
 
+saturation.addEventListener('input', () => {
+  outputSaturation.value = saturationValue = saturation.value;
+  updateColor()
+}, false);
+
 light.addEventListener('input', () => {
   outputLight.value = lightValue = light.value;
   updateColor()
 }, false);
-
-saturation.addEventListener('input', () => {
-  saturationLight.value = saturationValue = saturation.value;
-  updateColor()
-}, false);
-
 
 updateColor()

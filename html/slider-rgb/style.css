@@ -48,7 +48,15 @@ input[type=range] {
   border-radius: 25px;
 }
 
-.gray-scale::-webkit-slider-runnable-track{
+.saturation-scale::-webkit-slider-runnable-track{
+  background: linear-gradient(to right,
+        rgb(88, 88, 88) 0%, 
+        rgb(255, 53, 53) 100%
+    );
+  border-radius: 25px;
+}
+
+.light-scale::-webkit-slider-runnable-track{
   background: linear-gradient(to right,
         rgb(0, 0, 0) 0%, 
         rgb(255, 255, 255) 100%
