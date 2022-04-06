@@ -12,3 +12,8 @@ tool/credentials.json
 tool/credentials_all.json
 tool/data/
 tool/logs/
+
+creds.json
+*.pem
+*.crt
+*.key
