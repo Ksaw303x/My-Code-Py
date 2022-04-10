@@ -8,7 +8,7 @@ def customCallback(client, userdata, message):
 
 
 if __name__ == '__main__':
-    myMQTTClient = AWSIoTMQTTClient("Iot-test")
+    myMQTTClient = AWSIoTMQTTClient("LogoBA6-1")
     myMQTTClient.configureEndpoint("a5ozrqhkdqqas-ats.iot.eu-central-1.amazonaws.com", 8883)
     myMQTTClient.configureCredentials(
         "./dev1/AmazonRootCA1.pem",
