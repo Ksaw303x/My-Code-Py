@@ -15,15 +15,15 @@ if __name__ == '__main__':
         # 'mini_princess',
         # 'jillikins',
         # 'sweetiewow',
-        'kimi_so',
-        'cleopatra_sinns',
-        'mollyflwers',
-        'mr_alex_and_girls_'
+        # 'cherrymeoww',
+        # 'cleopatra_sinns',
+        # 'mollyflwers',
+        # 'mr_alex_and_girls_'
 
     ]
     for model in models:
         p = multiprocessing.Process(target=record, args=(model,))
         p.start()
 
-    r_p = Recorder('mr_alex_and_girls_', save_directory)
+    r_p = Recorder('cherrymeoww', save_directory)
     r_p.record()

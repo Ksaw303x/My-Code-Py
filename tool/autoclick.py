@@ -1,6 +1,7 @@
 import time
 import threading
 import pyautogui
+from datetime import datetime
 
 
 class ClickMouse(threading.Thread):
@@ -10,6 +11,8 @@ class ClickMouse(threading.Thread):
         self.button = button
         self.running = False
         self.program_running = True
+
+        self.count = 3746
 
     def start_clicking(self):
         self.running = True
@@ -24,17 +27,20 @@ class ClickMouse(threading.Thread):
     def run(self):
         while self.program_running:
             while self.running:
-                pyautogui.keyDown(self.button)
-                print('press')
-                time.sleep(0.2)
-                pyautogui.keyUp(self.button)
+                # pyautogui.keyDown(self.button)
+                pyautogui.click()
+                self.count += 1
+                print(f'click {self.count} at {datetime.now()}')
+                # time.sleep(0.2)
+                # pyautogui.keyUp(self.button)
                 time.sleep(self.delay)
+
             time.sleep(0.1)
 
 
 if __name__ == '__main__':
 
-    click_thread = ClickMouse(0.3, 'space')
+    click_thread = ClickMouse(30, 'left')
     click_thread.start()
 
     time.sleep(3)
@@ -45,6 +51,7 @@ if __name__ == '__main__':
 
 
     def on_press(key):
+        print('press:', key)
         if key == start_stop_key:
             if click_thread.running:
                 click_thread.stop_clicking()
