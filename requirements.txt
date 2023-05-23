@@ -15,7 +15,7 @@ instapy~=0.6.12
 discord_webhook
 
 # scraping
-requests==2.24.0
+requests==2.31.0
 bs4~=0.0.1
 sitemap-generator==0.9.8
 selenium~=3.141.0
