@@ -40,7 +40,7 @@ class ClickMouse(threading.Thread):
 
 if __name__ == '__main__':
 
-    click_thread = ClickMouse(30, 'left')
+    click_thread = ClickMouse(50, 'left')
     click_thread.start()
 
     time.sleep(3)
